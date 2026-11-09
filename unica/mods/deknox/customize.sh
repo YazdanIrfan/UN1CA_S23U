@@ -11,7 +11,18 @@ DEKNOX_HEX_PATCH()
         return 0
     fi
 
-    HEX_PATCH "$FILE" "$FROM" "$TO"
+    local FROM_CLEAN
+    FROM_CLEAN="$(tr "[:upper:]" "[:lower:]" <<< "${FROM// /}")"
+
+    if ! xxd -p -c 0 "$FILE" | grep -q "$FROM_CLEAN"; then
+        LOGW "No \"$FROM\" match in ${FILE//$WORK_DIR/}, skipping hex patch"
+        return 0
+    fi
+
+    HEX_PATCH "$FILE" "$FROM" "$TO" || {
+        LOGW "Failed to apply hex patch to ${FILE//$WORK_DIR/}, continuing"
+        return 0
+    }
 }
 
 # One UI 9 audioserver calls this audit logger while holding the audio-policy
