@@ -70,7 +70,48 @@ ADD_JAR_TO_CLASSPATH()
 # Skip files missing in the donor firmware instead of aborting
 ADD_TO_WORK_DIR_SOFT()
 {
-    ADD_TO_WORK_DIR "$@" || LOGW "- Skipped (not found in donor firmware): /$2/$3"
+    local SOURCE="$1"
+    local PARTITION="$2"
+    local FILE="$3"
+
+    local SRC_PATH="$SOURCE"
+    if [ ! -d "$SRC_PATH" ]; then
+        if [ "$(cut -d "/" -f 2 -s <<< "$SRC_PATH")" ]; then
+            SRC_PATH="$FW_DIR/$(cut -d "/" -f 1 <<< "$SRC_PATH")_$(cut -d "/" -f 2 <<< "$SRC_PATH")"
+        else
+            SRC_PATH="$SRC_DIR/prebuilts/samsung/$SRC_PATH"
+        fi
+    fi
+
+    while [[ "${FILE:0:1}" == "/" ]]; do
+        FILE="${FILE:1}"
+    done
+
+    local CHECK_FILE="$SRC_PATH"
+    if [[ "$PARTITION" == "system_ext" ]]; then
+        if [ -d "$SRC_PATH/system_ext" ]; then
+            CHECK_FILE+="/system_ext/$FILE"
+        elif [ -d "$SRC_PATH/system/system/system_ext" ]; then
+            CHECK_FILE+="/system/system/system_ext/$FILE"
+        else
+            CHECK_FILE+="/system/system_ext/$FILE"
+        fi
+    elif [[ "$PARTITION" == "system" ]]; then
+        if [ -d "$SRC_PATH/system/system" ]; then
+            CHECK_FILE+="/system/$FILE"
+        else
+            CHECK_FILE+="/system/${FILE//system\//}"
+        fi
+    else
+        CHECK_FILE+="/$PARTITION/$FILE"
+    fi
+
+    if [ -e "$CHECK_FILE" ] || [ -L "$CHECK_FILE" ] || [ -e "$CHECK_FILE.00" ]; then
+        ADD_TO_WORK_DIR "$@" || return 1
+    else
+        LOGW "- Skipped (not found in donor firmware): /$PARTITION/$FILE"
+        return 0
+    fi
 }
 
 if [[ "$SOURCE_EXTRA_FIRMWARES" != "SM-A346"* ]]; then
@@ -90,34 +131,40 @@ LOG_STEP_IN "- Patching system_ext"
 DELETE_FROM_WORK_DIR "system_ext" "bin"
 DELETE_FROM_WORK_DIR "system_ext" "lib64"
 DELETE_FROM_WORK_DIR "system_ext" "lib"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "bin"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "lib64"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "lib"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "bin"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "lib64"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "lib"
 
 # usp
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "usp"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "usp"
 
 # frameworks
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "framework/mediatek-common.jar"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "framework/mediatek-ims-base.jar"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "framework/mediatek-framework.jar"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/mediatek-common.jar"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/mediatek-ims-base.jar"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/mediatek-framework.jar"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/CustomPropInterface.jar"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/DataChannelApi.jar"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/duraspeed.jar"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "framework/log-handler.jar"
 
-ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-common.jar"
-ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-common.jar"
-ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-framework.jar"
-ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-framework.jar"
-ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-ims-base.jar"
-ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-ims-base.jar"
+if [ -f "$WORK_DIR/system_ext/framework/mediatek-common.jar" ] || [ -f "$WORK_DIR/system/system/system_ext/framework/mediatek-common.jar" ]; then
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-common.jar"
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-common.jar"
+fi
+if [ -f "$WORK_DIR/system_ext/framework/mediatek-framework.jar" ] || [ -f "$WORK_DIR/system/system/system_ext/framework/mediatek-framework.jar" ]; then
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-framework.jar"
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-framework.jar"
+fi
+if [ -f "$WORK_DIR/system_ext/framework/mediatek-ims-base.jar" ] || [ -f "$WORK_DIR/system/system/system_ext/framework/mediatek-ims-base.jar" ]; then
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "BOOTCLASSPATH" "/system_ext/framework/mediatek-ims-base.jar"
+    ADD_JAR_TO_CLASSPATH "bootclasspath" "DEX2OATBOOTCLASSPATH" "/system_ext/framework/mediatek-ims-base.jar"
+fi
 
 # etc
 DELETE_FROM_WORK_DIR "system_ext" "etc/init"
 DELETE_FROM_WORK_DIR "system_ext" "etc/selinux"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "etc/selinux"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system_ext" "etc/init"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "etc/selinux"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system_ext" "etc/init"
 
 FTP="
 a2dp_audio_policy_configuration.xml
@@ -152,13 +199,13 @@ LOG_STEP_OUT
 LOG_STEP_IN "- Patching system"
 # etc
 DELETE_FROM_WORK_DIR "system" "system/etc/init"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/etc/init"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/init"
 
 DELETE_FROM_WORK_DIR "system" "system/etc/vintf"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/etc/vintf"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/vintf"
 
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/etc/public.libraries-mtk.txt"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/etc/public.libraries-trustonic.txt"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/public.libraries-mtk.txt"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/public.libraries-trustonic.txt"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/public.libraries-camera.samsung.txt"
 ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/etc/public.libraries-arcsoft.txt"
 
@@ -181,9 +228,9 @@ done
 DELETE_FROM_WORK_DIR "system" "system/bin"
 DELETE_FROM_WORK_DIR "system" "system/lib64"
 DELETE_FROM_WORK_DIR "system" "system/lib"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/bin"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/lib64"
-ADD_TO_WORK_DIR "$MODEL/$REGION" "system" "system/lib"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/bin"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/lib64"
+ADD_TO_WORK_DIR_SOFT "$MODEL/$REGION" "system" "system/lib"
 
 VEX_LIBS="
 system/lib64/libandroid.vexfwk.samsung.so
