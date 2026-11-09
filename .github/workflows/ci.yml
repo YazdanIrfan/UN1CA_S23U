@@ -69,8 +69,10 @@ jobs:
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
             attr ccache clang curl ffmpeg jq libbrotli-dev libbz2-dev \
             libgtest-dev libprotobuf-dev libunwind-dev libpcre2-dev \
-            libzstd-dev linux-modules-extra-$(uname -r) lld p7zip-full protobuf-compiler webp
-          sudo modprobe erofs f2fs
+            libzstd-dev lld p7zip-full protobuf-compiler webp
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq "linux-modules-extra-$(uname -r)" 2>/dev/null || true
+          sudo modprobe erofs 2>/dev/null || true
+          sudo modprobe f2fs 2>/dev/null || true
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "${{ secrets.PLATFORM_KEY_PK8 }}" ]; then
@@ -142,10 +144,10 @@ jobs:
 
           echo "=== Finding Best Gofile Server ==="
           SERVER_RES="$(curl -s --connect-timeout 15 --max-time 30 https://api.gofile.io/servers || true)"
-          SERVER="$(echo "$SERVER_RES" | jq -r '.data.servers[0].name // empty')"
+          SERVER="$(echo "$SERVER_RES" | python3 -c "import sys, json; print(json.load(sys.stdin).get('data', {}).get('servers', [{}])[0].get('name', ''))" 2>/dev/null || echo "$SERVER_RES" | jq -r '.data.servers[0].name // empty' 2>/dev/null || true)"
           if [ -z "$SERVER" ]; then
             SERVER_RES="$(curl -s --connect-timeout 15 --max-time 30 https://api.gofile.io/getServer || true)"
-            SERVER="$(echo "$SERVER_RES" | jq -r '.data.server // empty')"
+            SERVER="$(echo "$SERVER_RES" | python3 -c "import sys, json; print(json.load(sys.stdin).get('data', {}).get('server', ''))" 2>/dev/null || echo "$SERVER_RES" | jq -r '.data.server // empty' 2>/dev/null || true)"
           fi
 
           if [ -n "$SERVER" ]; then
@@ -167,12 +169,12 @@ jobs:
           for ATTEMPT in 1 2 3; do
             echo "Upload attempt $ATTEMPT..."
             UPLOAD_RES="$(curl --progress-bar "${AUTH_PARAM[@]}" -F "file=@$ROM_FILE" "$UPLOAD_URL" || true)"
-            STATUS="$(echo "$UPLOAD_RES" | jq -r '.status // empty')"
+            STATUS="$(echo "$UPLOAD_RES" | python3 -c "import sys, json; print(json.load(sys.stdin).get('status', ''))" 2>/dev/null || echo "$UPLOAD_RES" | jq -r '.status // empty' 2>/dev/null || true)"
             if [ "$STATUS" = "ok" ]; then
               UPLOAD_SUCCESS=true
               break
             else
-              echo "Attempt $ATTEMPT failed or returned unexpected response: $UPLOAD_RES"
+              echo "Attempt $ATTEMPT returned: $UPLOAD_RES"
               sleep 5
             fi
           done
@@ -182,7 +184,7 @@ jobs:
             exit 1
           fi
 
-          DOWNLOAD_PAGE="$(echo "$UPLOAD_RES" | jq -r '.data.downloadPage // empty')"
+          DOWNLOAD_PAGE="$(echo "$UPLOAD_RES" | python3 -c "import sys, json; print(json.load(sys.stdin).get('data', {}).get('downloadPage', ''))" 2>/dev/null || echo "$UPLOAD_RES" | jq -r '.data.downloadPage // empty' 2>/dev/null || true)"
 
           echo "=== Gofile Upload Success ==="
           echo "Download URL: $DOWNLOAD_PAGE"
