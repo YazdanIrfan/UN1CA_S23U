@@ -97,21 +97,21 @@ SMALI_PATCH()
         fi
     elif [[ "$OPERATION" == "remove" ]]; then
         local USED
-        USED="$(find "$FILE_PATH" -type f -name "*.smali" ! -name "*.orig" ! -name "*.rej" ! -path "*$SMALI" -type f -exec grep -r -n -- "$(cut -d "." -f "1" <<< "${SMALI#*/}");" {} \+ || true)"
+        USED="$(find "$FILE_PATH" -type f -name "*.smali" ! -name "*.orig" ! -name "*.rej" ! -path "*$SMALI" -type f -exec grep -r -n -- "$(cut -d "." -f "1" <<< "${SMALI#*/}");" {} \+ 2>/dev/null || true)"
         USED="$(cut -d ":" -f 1-2 <<< "$USED")"
 
         if [ "$USED" ]; then
-            LOGE "Cannot remove \"$SMALI\" from /$PARTITION/$FILE as it is used elsewhere"
-            echo -e "\n\033[0;31mMatches:" >&2
+            LOGW "Cannot remove \"$SMALI\" from /$PARTITION/$FILE as it is used elsewhere; keeping it"
+            echo -e "\n\033[0;33mMatches:" >&2
             echo -e -n "$(head -n 10 <<< "${USED//$FILE_PATH\//    - }")" >&2
             [ "$(wc -l <<< "$USED")" -gt 10 ] && \
                 echo -e -n "\n    ...and other $(($(wc -l <<< "$USED") - 10)) matches" >&2
             echo -e "\033[0m" >&2
-            return 1
+            return 0
         fi
 
         LOG "- Removing \"$SMALI\" from /$PARTITION/$FILE"
-        EVAL "LC_ALL=C rm \"$FILE_PATH/${SMALI//$/\\$}\"" || return 1
+        EVAL "LC_ALL=C rm \"$FILE_PATH/${SMALI//$/\\$}\"" || return 0
         return 0
     fi
 
@@ -141,17 +141,17 @@ SMALI_PATCH()
     # Remove the method completely
     if [[ "$OPERATION" == "strip" ]]; then
         local USED
-        USED="$(grep -r -n -- "invoke.*$(basename "$SMALI" | cut -d "." -f "1");" "$FILE_PATH")"
-        USED="$(grep -F "$METHOD" <<< "$USED" | cut -d ":" -f 1-2)"
+        USED="$(grep -r -n -- "invoke.*$(basename "$SMALI" | cut -d "." -f "1");" "$FILE_PATH" 2>/dev/null || true)"
+        USED="$(grep -F "$METHOD" <<< "$USED" | cut -d ":" -f 1-2 || true)"
 
         if [ "$USED" ]; then
-            LOGE "Cannot strip method \"$METHOD\" in /$PARTITION/$FILE/$SMALI as it is used elsewhere"
-            echo -e "\n\033[0;31mMatches:" >&2
+            LOGW "Cannot strip method \"$METHOD\" in /$PARTITION/$FILE/$SMALI as it is used elsewhere; skipping"
+            echo -e "\n\033[0;33mMatches:" >&2
             echo -e -n "$(head -n 10 <<< "${USED//$FILE_PATH\//    - }")" >&2
             [ "$(wc -l <<< "$USED")" -gt 10 ] && \
                 echo -e -n "\n    ...and other $(($(wc -l <<< "$USED") - 10)) matches" >&2
             echo -e "\033[0m" >&2
-            return 1
+            return 0
         fi
 
         LOG "- Stripping method \"$METHOD\" in /$PARTITION/$FILE/$SMALI"
@@ -190,8 +190,8 @@ SMALI_PATCH()
 
         RET="${METHOD#*)}"
         if [[ "$RET" != "V" ]]; then
-            LOGE "Cannot nullify non-void method \"$METHOD\" in /$PARTITION/$FILE/$SMALI"
-            return 1
+            LOGW "Cannot nullify non-void method \"$METHOD\" in /$PARTITION/$FILE/$SMALI; skipping"
+            return 0
         else
             RET="return-void"
         fi
@@ -394,7 +394,7 @@ SMALI_PATCH()
     elif [[ "$OPERATION" == "replaceall" ]]; then
         LOG "- Replacing all occurrences of \"$VALUE\" with \"$REPLACEMENT\" in /$PARTITION/$FILE/$SMALI"
 
-        EVAL "sed -i \"s|$VALUE|$REPLACEMENT|g\" \"$FILE_PATH/${SMALI//$/\\$}\"" || return 1
+        EVAL "sed -i \"s|$VALUE|$REPLACEMENT|g\" \"$FILE_PATH/${SMALI//$/\\$}\"" || return 0
 
         AFTER="$(sha1sum "$FILE_PATH/$SMALI")"
         if [[ "$BEFORE" == "$AFTER" ]]; then

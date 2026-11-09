@@ -57,8 +57,8 @@ GET_SYSTEM_EXT()
 
 CIL_NAME="$(head -n 1 "$WORK_DIR/vendor/etc/selinux/plat_sepolicy_vers.txt")"
 PATCHED=false
-VENDOR_API_LIST="$(find "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/mapping" -type f -printf "%f\n" | \
-                    sed '/.compat./d' | sed 's/.cil//' | sed 's/\./_/' | sort)"
+VENDOR_API_LIST="$(find "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/mapping" -type f -printf "%f\n" 2>/dev/null | \
+                    sed '/.compat./d' | sed 's/.cil//' | sed 's/\./_/' | sort || true)"
 # ]
 
 for e in $ENTRIES; do

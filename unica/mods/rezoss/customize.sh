@@ -1,5 +1,10 @@
 SKIPUNZIP=1
 
+if [[ "$TARGET_CODENAME" != "dm3q" ]]; then
+    LOG "\033[0;33m! Rezoss is only supported on dm3q, skipping\033[0m"
+    return 0
+fi
+
 LOG_STEP_IN "- Rezoss experimental mods"
 
 source "$MODPATH/scheduled-power-on/integrate.sh" || return 1
