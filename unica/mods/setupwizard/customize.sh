@@ -1,18 +1,25 @@
 DECODE_APK "system" "system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
 
 LOG "- Enabling navigation bar type settings step"
+SW_DIR="$APKTOOL_DIR/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk"
+if [ -d "$SW_DIR" ]; then
+    while IFS= read -r f; do
+        [ -f "$f" ] || continue
+        sed -i 's/"navigationbar_setting"/"this_string_does_not_exist"/g' "$f"
+    done < <(grep -r -l -- '"navigationbar_setting"' "$SW_DIR" 2>/dev/null || true)
+fi
 SMALI_PATCH "system" "system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" \
     "smali/e7/f.smali" "replace" \
     "d(Landroid/content/Context;Z)Ljava/util/ArrayList;" \
     "navigationbar_setting" \
     "this_string_does_not_exist" \
-    > /dev/null
+    > /dev/null 2>&1 || true
 SMALI_PATCH "system" "system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk" \
     "smali/com/sec/android/app/SecSetupWizard/SecSetupWizardActivity.smali" "replace" \
     "e(Ljava/lang/String;)Z" \
     "navigationbar_setting" \
     "this_string_does_not_exist" \
-    > /dev/null
+    > /dev/null 2>&1 || true
 
 LOG "- Disabling Recommended apps step"
 EVAL "sed -i \"/omcagent/d\" \"$APKTOOL_DIR/system/priv-app/SecSetupWizard_Global/SecSetupWizard_Global.apk/res/values/arrays.xml\""

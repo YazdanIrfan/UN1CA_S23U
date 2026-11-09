@@ -24,17 +24,28 @@ if [[ "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" != "$TARGET_DVFSAPP_CONFIG_D
     fi
 
     # com/sec/android/sdhms/performance/PerformanceFeature
-    SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
-        "smali/r1/c.smali" "replace" \
-        "<clinit>()V" \
-        "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" \
-        "$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME"
-    # com/sec/android/sdhms/performance/settings/PerformanceProperties
-    SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
-        "smali/z1/e.smali" "replace" \
-        "<init>(Landroid/content/Context;)V" \
-        "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" \
-        "$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME"
+    local SDHMS_DIR="$APKTOOL_DIR/system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk"
+    local PATCHED_DVFS=false
+    if [ -d "$SDHMS_DIR" ]; then
+        while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            LOG "- Replacing \"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\" with \"$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\" in ${f#$SDHMS_DIR/}"
+            sed -i "s/\"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"/\"$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"/g" "$f"
+            PATCHED_DVFS=true
+        done < <(grep -r -l -- "\"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"" "$SDHMS_DIR" 2>/dev/null || true)
+    fi
+    if ! $PATCHED_DVFS; then
+        SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
+            "smali/r1/c.smali" "replace" \
+            "<clinit>()V" \
+            "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" \
+            "$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" 2>/dev/null || true
+        SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
+            "smali/z1/e.smali" "replace" \
+            "<init>(Landroid/content/Context;)V" \
+            "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" \
+            "$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" 2>/dev/null || true
+    fi
 fi
 
 # SEC_PRODUCT_FEATURE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME
@@ -64,11 +75,22 @@ if [[ "$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME" != "$TARGET_DVFSAPP_CONFIG_S
     fi
 
     # com/sec/android/sdhms/util/Feature
-    SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
-        "smali/U1/w.smali" "replace" \
-        "<clinit>()V" \
-        "$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME" \
-        "$TARGET_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME"
+    local PATCHED_SSRM=false
+    if [ -d "$SDHMS_DIR" ]; then
+        while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            LOG "- Replacing \"$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME\" with \"$TARGET_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME\" in ${f#$SDHMS_DIR/}"
+            sed -i "s/\"$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME\"/\"$TARGET_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME\"/g" "$f"
+            PATCHED_SSRM=true
+        done < <(grep -r -l -- "\"$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME\"" "$SDHMS_DIR" 2>/dev/null || true)
+    fi
+    if ! $PATCHED_SSRM; then
+        SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \
+            "smali/U1/w.smali" "replace" \
+            "<clinit>()V" \
+            "$SOURCE_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME" \
+            "$TARGET_DVFSAPP_CONFIG_SSRM_POLICY_FILENAME" 2>/dev/null || true
+    fi
 fi
 
 if [ -f "$SRC_DIR/target/$TARGET_CODENAME/dvfs/siop_model.xml" ]; then
