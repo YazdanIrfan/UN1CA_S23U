@@ -1,20 +1,17 @@
 SKIPUNZIP=1
 
-if [[ "$TARGET_CODENAME" != "dm3q" ]]; then
-    LOG "\033[0;33m! Rezoss is only supported on dm3q, skipping\033[0m"
-    return 0
-fi
-
 LOG_STEP_IN "- Rezoss experimental mods"
 
-source "$MODPATH/scheduled-power-on/integrate.sh" || return 1
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
+    source "$MODPATH/scheduled-power-on/integrate.sh" || return 1
 
-# This POC is restricted to the tested S23U target and retains Qwen fallback.
-source "$MODPATH/aioskernel/native-now-nudge/config.sh" || return 1
-if [[ "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
-    [[ "$TARGET_CODENAME" == "dm3q" ]] || ABORT "Native Now Nudge is tested only on dm3q"
-    [[ "${UNICA_ENABLE_SAMSUNG_AICORE:-true}" == "true" ]] || ABORT "Native Now Nudge requires SamsungAiCore"
-    [[ "${UNICA_ENABLE_UNSAFE_S26U_QNN_EXPERIMENT:-false}" != "true" ]] || ABORT "Do not combine native Now Nudge with the donor QNN experiment"
+    # This POC is restricted to the tested S23U target and retains Qwen fallback.
+    source "$MODPATH/aioskernel/native-now-nudge/config.sh" || return 1
+    if [[ "$TARGET_CODENAME" == "dm3q" && "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
+        [[ "$TARGET_CODENAME" == "dm3q" ]] || ABORT "Native Now Nudge is tested only on dm3q"
+        [[ "${UNICA_ENABLE_SAMSUNG_AICORE:-true}" == "true" ]] || ABORT "Native Now Nudge requires SamsungAiCore"
+        [[ "${UNICA_ENABLE_UNSAFE_S26U_QNN_EXPERIMENT:-false}" != "true" ]] || ABORT "Do not combine native Now Nudge with the donor QNN experiment"
+    fi
 fi
 
 # =============================================================================
@@ -106,7 +103,7 @@ APPLY_PATCH "system" "system/priv-app/SamsungSmartSuggestions/SamsungSmartSugges
     "$MODPATH/smartsuggestions/SamsungSmartSuggestions.apk/0026-Connect-in-app-and-notification-replies-to-RezossAI.patch"
 APPLY_PATCH "system" "system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk" \
     "$MODPATH/smartsuggestions/SamsungSmartSuggestions.apk/0027-Preserve-WhatsApp-conversation-nudge-on-unknown-autofill.patch"
-if [[ "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
+if [[ "$TARGET_CODENAME" == "dm3q" && "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
     LOG "- Integrating native V73 Now Nudge after Rezoss patch 0026"
     for REZOSS_NUDGE_PATCH in "$MODPATH/aioskernel/native-now-nudge/"000[123456789]-*.patch; do
         APPLY_PATCH "system" "system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk" "$REZOSS_NUDGE_PATCH"
@@ -186,6 +183,7 @@ SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_COMMON_SUPPORT_NAL_PRELOADAPP_
 # =============================================================================
 # Floating Features - Camera
 # =============================================================================
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
 # Stock S23U does not define CAMERA_CONFIG_AUTOFRAMING; forcing "uhd" crashes smooth_transition on dm3q.
 # SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_AUTOFRAMING" "uhd"
 # SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_VENDOR_LIB_INFO" "de_flicker.arcsoft.v1,de_flicker_hdr.arcsoft.v1,food.samsung.v1,face_landmark.arcsoft.v2_1,beauty.samsung.v4,facial_restoration.arcsoft.v1,facial_attribute.samsung.v1,human_tracking_hand.arcsoft.v4,fr_tracking.arcsoft.v1,smart_scan.samsung.v2,aimode.samsung.v2,aimfisp.samsung.v1,ai_clear_zoom.arcsoft.v1,macro_raw_sr.arcsoft.v1,super_resolution_raw.arcsoft.v2,aebhdr.arcsoft.v1,hybridhdr.arcsoft.v1,single_bokeh.samsung.v2,super_night.mpi.v2,swuwdc.arcsoft.v1,event_detection.samsung.v2,selfie_correction.samsung.v1,dual_bokeh.samsung.v1_1,image_codec.samsung.v2,pro_single_rgb.mpi.v1,image_enhance.arcsoft.v1,localtm.samsung.v1_1,stereo_photo.samsung.v1,compressed_raw_decoder.samsung.v1"
@@ -213,6 +211,7 @@ SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_AUTO_EXPOSURE_L
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_MOTIONPHOTO_AUTO_TRIM_MODE" "TRUE"
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_MOTIONPHOTO_SOUND_TIMING" "TRUE"
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_MOTIONPHOTO_SOUND_TYPE" "TRUE"
+fi
 
 # =============================================================================
 # Floating Features - Display / Gallery / Media
@@ -470,6 +469,7 @@ _REZOSS_ENSURE_BOOTANIMATION_SELINUX()
 
 _REZOSS_ENSURE_BOOTANIMATION_SELINUX
 
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
 # =============================================================================
 # S26U One UI 9 Quick Share Apple Devices Extension
 # =============================================================================
@@ -811,6 +811,7 @@ _REZOSS_SET_VENDOR_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_V
 _REZOSS_SET_VENDOR_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_FUSION_HIGH_RESOLUTION" "FALSE"
 _REZOSS_SET_VENDOR_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_SUPPORT_HIGH_RESOLUTION_SWBINNING" "FALSE"
 _REZOSS_ENSURE_LOG_VIDEO_FILTER_SELINUX
+fi
 
 unset -f _REZOSS_SET_VENDOR_FLOATING_FEATURE_CONFIG _REZOSS_APPEND_UNIQUE_LINE
 unset -f _REZOSS_ENSURE_FOUNDATIONAL_SEGMENTATION_SYSTEM_CONFIGS _REZOSS_ENSURE_DVS_SYSTEM_CONFIGS
@@ -863,23 +864,20 @@ APPLY_PATCH "system" "system/priv-app/DressRoom/DressRoom.apk" \
 LOG "- Patch DressRoom UN1CA lockscreen font picker integration"
 # Firmware updates can rename the obfuscated callers. Resolve exact instruction
 # sequences and dry-run the whole patch before modifying the decoded APK.
-REZOSS_DRESSROOM_PATCH=$(mktemp /tmp/rezoss-dressroom-fonts.XXXXXX.patch) || return 1
-if ! EVAL "python3 \"$MODPATH/dressroom/resolve_font_patch.py\" \
-    \"$APKTOOL_DIR/system/priv-app/DressRoom/DressRoom.apk\" \
-    \"$MODPATH/dressroom/DressRoom.apk/0002-Expose-UN1CA-selected-fonts-to-lockscreen-picker.patch\" \
-    > \"$REZOSS_DRESSROOM_PATCH\""; then
-    rm -- "$REZOSS_DRESSROOM_PATCH"
+REZOSS_DRESSROOM_PATCH=$(mktemp /tmp/rezoss-dressroom-fonts.XXXXXX.patch 2>/dev/null) || true
+if [ -n "$REZOSS_DRESSROOM_PATCH" ]; then
+    if EVAL "python3 \"$MODPATH/dressroom/resolve_font_patch.py\" \
+        \"$APKTOOL_DIR/system/priv-app/DressRoom/DressRoom.apk\" \
+        \"$MODPATH/dressroom/DressRoom.apk/0002-Expose-UN1CA-selected-fonts-to-lockscreen-picker.patch\" \
+        > \"$REZOSS_DRESSROOM_PATCH\" 2>/dev/null"; then
+        APPLY_PATCH "system" "system/priv-app/DressRoom/DressRoom.apk" \
+            "$REZOSS_DRESSROOM_PATCH" || LOGW "DressRoom font patch failed to apply"
+    else
+        LOGW "DressRoom font patch resolution failed, skipping"
+    fi
+    rm -f -- "$REZOSS_DRESSROOM_PATCH"
     unset REZOSS_DRESSROOM_PATCH
-    return 1
 fi
-if ! APPLY_PATCH "system" "system/priv-app/DressRoom/DressRoom.apk" \
-    "$REZOSS_DRESSROOM_PATCH"; then
-    rm -- "$REZOSS_DRESSROOM_PATCH"
-    unset REZOSS_DRESSROOM_PATCH
-    return 1
-fi
-rm -- "$REZOSS_DRESSROOM_PATCH"
-unset REZOSS_DRESSROOM_PATCH
 
 LOG "- Add lockscreen clock height and widget size controls"
 APPLY_PATCH "system" "system/priv-app/DressRoom/DressRoom.apk" \
@@ -907,72 +905,62 @@ fi
 unset REZOSS_DEPTH_SYSTEMUI_DIR REZOSS_DEPTH_SYSTEMUI_HOOK
 
 LOG "- Downloading latest Samsung Always On Display app"
-DOWNLOAD_FILE "$(GET_GALAXY_STORE_DOWNLOAD_URL "com.samsung.android.app.aodservice")" \
-    "$WORK_DIR/system/system/priv-app/AODService_v80/AODService_v80.apk" || return 1
-
-# The Galaxy Store APK may change obfuscated class names. Preserve any cached
-# decode (including partial failed applies) and decode the downloaded APK fresh.
-REZOSS_AOD_TEMP="$(mktemp -d /tmp/unica-aod.XXXXXX)" || return 1
-REZOSS_AOD_DECODE="$APKTOOL_DIR/system/priv-app/AODService_v80/AODService_v80.apk"
-REZOSS_AOD_PATCH_DIR="$REZOSS_AOD_TEMP/patches"
-if [[ -d "$REZOSS_AOD_DECODE" ]]; then
-    LOG "- Preserving previous AOD decode at $REZOSS_AOD_TEMP/previous-decode"
-    mv "$REZOSS_AOD_DECODE" "$REZOSS_AOD_TEMP/previous-decode" || return 1
+REZOSS_AOD_URL="$(GET_GALAXY_STORE_DOWNLOAD_URL "com.samsung.android.app.aodservice")"
+if [ -n "$REZOSS_AOD_URL" ] && DOWNLOAD_FILE "$REZOSS_AOD_URL" "$WORK_DIR/system/system/priv-app/AODService_v80/AODService_v80.apk"; then
+    REZOSS_AOD_TEMP="$(mktemp -d /tmp/unica-aod.XXXXXX 2>/dev/null)" || true
+    REZOSS_AOD_DECODE="$APKTOOL_DIR/system/priv-app/AODService_v80/AODService_v80.apk"
+    if [ -n "$REZOSS_AOD_TEMP" ]; then
+        REZOSS_AOD_PATCH_DIR="$REZOSS_AOD_TEMP/patches"
+        if [[ -d "$REZOSS_AOD_DECODE" ]]; then
+            LOG "- Preserving previous AOD decode at $REZOSS_AOD_TEMP/previous-decode"
+            mv "$REZOSS_AOD_DECODE" "$REZOSS_AOD_TEMP/previous-decode" || true
+        fi
+        if DECODE_APK "system" "system/priv-app/AODService_v80/AODService_v80.apk" && \
+           python3 "$MODPATH/aodservice/prepare_patches.py" "$REZOSS_AOD_DECODE" \
+               "$MODPATH/aodservice/AODService_v80.apk" "$REZOSS_AOD_PATCH_DIR" 2>/dev/null; then
+            LOG "- Patch AODService UN1CA clock font list integration"
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0001-Expose-UN1CA-Font-Selector-fonts-to-clock-picker.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0002-Mirror-stretch-clock-font-type-to-AOD.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0003-Backfill-AOD-stretch-font-type-on-startup.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0004-Normalize-stretch-font-data-before-AOD-render.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0005-Preserve-AOD-stretch-font-heights.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0006-Allow-AOD-stretch-render-when-font-heights-exist.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0007-Use-lockscreen-clock-style-for-AOD-render.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0008-Expand-and-resize-lockscreen-widget-container.patch" || true
+            APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
+                "$REZOSS_AOD_PATCH_DIR/0009-Normalize-AOD-SDK-clock-item-stretch-font-data.patch" || true
+        else
+            LOGW "AODService patch preparation failed or skipped"
+        fi
+        rm -rf "$REZOSS_AOD_TEMP"
+        unset REZOSS_AOD_TEMP REZOSS_AOD_DECODE REZOSS_AOD_PATCH_DIR
+    fi
+else
+    LOGW "Failed to download or locate AODService, skipping"
 fi
-DECODE_APK "system" "system/priv-app/AODService_v80/AODService_v80.apk" || return 1
-LOG "- Resolve AOD hooks and preflight all nine patches with zero fuzz"
-python3 "$MODPATH/aodservice/prepare_patches.py" "$REZOSS_AOD_DECODE" \
-    "$MODPATH/aodservice/AODService_v80.apk" "$REZOSS_AOD_PATCH_DIR" || return 1
-
-LOG "- Patch AODService UN1CA clock font list integration"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0001-Expose-UN1CA-Font-Selector-fonts-to-clock-picker.patch" || return 1
-
-LOG "- Patch AODService stretch clock font type sync"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0002-Mirror-stretch-clock-font-type-to-AOD.patch" || return 1
-
-LOG "- Patch AODService stretch clock font type startup backfill"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0003-Backfill-AOD-stretch-font-type-on-startup.patch" || return 1
-
-LOG "- Patch AODService stretch clock font render normalization"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0004-Normalize-stretch-font-data-before-AOD-render.patch" || return 1
-
-LOG "- Patch AODService AOD stretch font heights"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0005-Preserve-AOD-stretch-font-heights.patch" || return 1
-
-LOG "- Patch AODService AOD stretch renderer gate"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0006-Allow-AOD-stretch-render-when-font-heights-exist.patch" || return 1
-
-LOG "- Patch AODService to use lockscreen clock style for AOD rendering"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0007-Use-lockscreen-clock-style-for-AOD-render.patch" || return 1
-
-LOG "- Expand lockscreen widget grid and preserve widget proportions when resizing"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0008-Expand-and-resize-lockscreen-widget-container.patch" || return 1
-
-LOG "- Patch AODService SDK clock item stretch font data"
-APPLY_PATCH "system" "system/priv-app/AODService_v80/AODService_v80.apk" \
-    "$REZOSS_AOD_PATCH_DIR/0009-Normalize-AOD-SDK-clock-item-stretch-font-data.patch" || return 1
-
-unset REZOSS_AOD_TEMP REZOSS_AOD_DECODE REZOSS_AOD_PATCH_DIR
+unset REZOSS_AOD_URL
 
 LOG "- Patch VisualCloudCore Galaxy Store model check"
 APPLY_PATCH "system" "system/app/VisualCloudCore/VisualCloudCore.apk" \
     "$MODPATH/visualcloudcore/VisualCloudCore.apk/0001-Use-S25-Ultra-model-for-stub-update-check.patch"
 
-LOG "- Patch product framework overlay doze auto-brightness"
-APPLY_PATCH "product" "overlay/framework-res__dm3qxxx__auto_generated_rro_product.apk" \
-    "$MODPATH/rro/framework-res__dm3qxxx__auto_generated_rro_product.apk/0001-Add-doze-auto-brightness-arrays.patch"
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
+    LOG "- Patch product framework overlay doze auto-brightness"
+    APPLY_PATCH "product" "overlay/framework-res__dm3qxxx__auto_generated_rro_product.apk" \
+        "$MODPATH/rro/framework-res__dm3qxxx__auto_generated_rro_product.apk/0001-Add-doze-auto-brightness-arrays.patch"
 
-LOG "- Patch product framework overlay Now Nudge notification allowlist"
-APPLY_PATCH "product" "overlay/framework-res__dm3qxxx__auto_generated_rro_product.apk" \
-    "$MODPATH/rro/framework-res__dm3qxxx__auto_generated_rro_product.apk/0002-Add-Now-Nudge-notification-allow-packages.patch"
+    LOG "- Patch product framework overlay Now Nudge notification allowlist"
+    APPLY_PATCH "product" "overlay/framework-res__dm3qxxx__auto_generated_rro_product.apk" \
+        "$MODPATH/rro/framework-res__dm3qxxx__auto_generated_rro_product.apk/0002-Add-Now-Nudge-notification-allow-packages.patch"
+fi
 
 # =============================================================================
 # Notification Highlights / Galaxy AI Stack
@@ -1048,7 +1036,7 @@ else
 fi
 DELETE_FROM_WORK_DIR "system" "system/app/AIOSKernelService"
 DELETE_FROM_WORK_DIR "system" "system/priv-app/AIOSKernelService"
-if [[ "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
+if [[ "$TARGET_CODENAME" == "dm3q" && "$UNICA_ENABLE_NATIVE_NOW_NUDGE" == "true" ]]; then
     source "$MODPATH/aioskernel/native-now-nudge/integrate_rom.sh" || return 1
 elif [[ "${UNICA_ENABLE_AIOSKERNELSERVICE:-false}" == "true" ]]; then
     ADD_TO_WORK_DIR "m3qxxx" "system" "system/priv-app/AIOSKernelService/AIOSKernelService.apk" 0 0 644 "u:object_r:system_file:s0"
@@ -1466,12 +1454,14 @@ PY_CACHE
 # =============================================================================
 # Kernel - local Edgar kernel and KernelSU-Next CI cache, with online updates
 # =============================================================================
-if ! _REZOSS_ARCHIVE_KERNEL; then
-  ABORT "Failed to archive original boot.img and init_boot.img"
-elif ! _REZOSS_KERNEL_FROM_CACHE; then
-  LOGW "Cached kernel/KSU patch failed; restoring archived boot.img and init_boot.img"
-  _REZOSS_RESTORE_ARCHIVED_KERNEL "true" "true"
-fi
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
+    if ! _REZOSS_ARCHIVE_KERNEL; then
+      ABORT "Failed to archive original boot.img and init_boot.img"
+    elif ! _REZOSS_KERNEL_FROM_CACHE; then
+      LOGW "Cached kernel/KSU patch failed; restoring archived boot.img and init_boot.img"
+      _REZOSS_RESTORE_ARCHIVED_KERNEL "true" "true"
+    fi
 
-# Experimental Wi-Fi modules must match the final selected kernel.
-source "$MODPATH/wondertap/integrate.sh" || return 1
+    # Experimental Wi-Fi modules must match the final selected kernel.
+    source "$MODPATH/wondertap/integrate.sh" || return 1
+fi
