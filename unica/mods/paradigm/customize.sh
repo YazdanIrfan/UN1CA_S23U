@@ -333,16 +333,20 @@ ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libsoundboostereq_legacy.so" 0 0
 ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/lib_sag_ai_sound_sep_v1.00.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/lib_sag_ai_sound_sep_v2.00.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libtensorflowlite_gpu_delegate.so" 0 0 644 "u:object_r:system_lib_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libveframework.videoeditor.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/android.media.audio.eraser.types-V1-ndk.so" 0 0 644 "u:object_r:vendor_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/libtensorflowlite.adv_audio.samsung.so" 0 0 644 "u:object_r:vendor_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/soundfx/libaudiosaplus_sec.so" 0 0 644 "u:object_r:vendor_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/lib_SoundAlive_play_plus_ver900.so" 0 0 644 "u:object_r:vendor_file:s0"
+if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "mssi" ]]; then
+    ADD_TO_WORK_DIR "gts11xx" "system" "system/lib64/libveframework.videoeditor.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+else
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libveframework.videoeditor.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/android.media.audio.eraser.types-V1-ndk.so" 0 0 644 "u:object_r:vendor_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/libtensorflowlite.adv_audio.samsung.so" 0 0 644 "u:object_r:vendor_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/soundfx/libaudiosaplus_sec.so" 0 0 644 "u:object_r:vendor_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "vendor" "lib64/lib_SoundAlive_play_plus_ver900.so" 0 0 644 "u:object_r:vendor_file:s0"
+    _PARADIGM_SET_VENDOR_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" "$_AUDIO_ERASER_VENDOR_SOUNDALIVE_VERSION"
+fi
 _AUDIO_ERASER_SYSTEM_SOUNDALIVE_VERSION="eq_custom,uhq_onoff,karaoke,adapt,spk_stereo,dvfs_20_percent,dvfs_max_45_percent,voice_boost"
 _AUDIO_ERASER_VENDOR_SOUNDALIVE_VERSION="eq_custom,uhq_onoff,karaoke,adapt,spk_stereo,dvfs_20_percent,dvfs_max_45_percent,volume_normalize"
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" "$_AUDIO_ERASER_SYSTEM_SOUNDALIVE_VERSION"
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_AUDIO_CONFIG_MULTISOURCE_SEPARATOR" "{FastScanning_6, SourceSeparator_4, Version_1.3.0}"
-_PARADIGM_SET_VENDOR_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_AUDIO_CONFIG_SOUNDALIVE_VERSION" "$_AUDIO_ERASER_VENDOR_SOUNDALIVE_VERSION"
 unset _AUDIO_ERASER_SYSTEM_SOUNDALIVE_VERSION
 unset _AUDIO_ERASER_VENDOR_SOUNDALIVE_VERSION
 LOG_STEP_OUT
@@ -406,33 +410,35 @@ DECODE_APK "system" "system/priv-app/SemanticSearchCore/SemanticSearchCore.apk"
 SEMANTIC_SEARCH_CORE_DECODED="$APKTOOL_DIR/system/priv-app/SemanticSearchCore/SemanticSearchCore.apk"
 SEMANTIC_SEARCH_CORE_LIB="$SEMANTIC_SEARCH_CORE_DECODED/lib/arm64-v8a"
 SEMANTIC_SEARCH_CORE_SHARED="$SEMANTIC_SEARCH_CORE_DECODED/assets/shared"
-SEMANTIC_SEARCH_CORE_FW="$FW_DIR/SM-S918B_EUX"
-SEMANTIC_SEARCH_CORE_QNN_MISSING=0
-if [ ! -d "$SEMANTIC_SEARCH_CORE_LIB" ] || [ ! -d "$SEMANTIC_SEARCH_CORE_SHARED" ]; then
-    LOGE "SemanticSearchCore.apk decoded QNN directories are missing"
-    return 1
-fi
-for f in \
-    "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtp.so" \
-    "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnSystem.so" \
-    "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" \
-    "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so"; do
-    if [ ! -f "$f" ]; then
-        LOGE "File not found: ${f//$SRC_DIR\//}"
-        SEMANTIC_SEARCH_CORE_QNN_MISSING=1
+if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" != "mssi" ]]; then
+    SEMANTIC_SEARCH_CORE_FW="$FW_DIR/SM-S918B_EUX"
+    SEMANTIC_SEARCH_CORE_QNN_MISSING=0
+    if [ ! -d "$SEMANTIC_SEARCH_CORE_LIB" ] || [ ! -d "$SEMANTIC_SEARCH_CORE_SHARED" ]; then
+        LOGE "SemanticSearchCore.apk decoded QNN directories are missing"
+        return 1
     fi
-done
-if [ "$SEMANTIC_SEARCH_CORE_QNN_MISSING" != "0" ]; then
-    return 1
+    for f in \
+        "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtp.so" \
+        "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnSystem.so" \
+        "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" \
+        "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so"; do
+        if [ ! -f "$f" ]; then
+            LOGE "File not found: ${f//$SRC_DIR\//}"
+            SEMANTIC_SEARCH_CORE_QNN_MISSING=1
+        fi
+    done
+    if [ "$SEMANTIC_SEARCH_CORE_QNN_MISSING" != "0" ]; then
+        return 1
+    fi
+    LOG "- Replacing SemanticSearchCore.apk QNN HTP V81 binaries with S23U Hexagon V73 binaries"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtp.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtp.so"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnSystem.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnSystem.so"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtpV73Stub.so"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtpV81Stub.so"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so" "$SEMANTIC_SEARCH_CORE_SHARED/libQnnHtpV73Skel.so"
+    cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so" "$SEMANTIC_SEARCH_CORE_SHARED/libQnnHtpV81Skel.so"
+    EVAL "sed -i 's/qc-sm8850-release/qc-sm8550-release/g' \"$SEMANTIC_SEARCH_CORE_DECODED/AndroidManifest.xml\""
 fi
-LOG "- Replacing SemanticSearchCore.apk QNN HTP V81 binaries with S23U Hexagon V73 binaries"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtp.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtp.so"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnSystem.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnSystem.so"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtpV73Stub.so"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib64/snap/libQnnHtpV73Stub.so" "$SEMANTIC_SEARCH_CORE_LIB/libQnnHtpV81Stub.so"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so" "$SEMANTIC_SEARCH_CORE_SHARED/libQnnHtpV73Skel.so"
-cp -f "$SEMANTIC_SEARCH_CORE_FW/vendor/lib/rfsa/adsp/snap/libQnnHtpV73Skel.so" "$SEMANTIC_SEARCH_CORE_SHARED/libQnnHtpV81Skel.so"
-EVAL "sed -i 's/qc-sm8850-release/qc-sm8550-release/g' \"$SEMANTIC_SEARCH_CORE_DECODED/AndroidManifest.xml\""
 EVAL "sed -i 's/android:extractNativeLibs=\"false\"/android:extractNativeLibs=\"true\"/g' \"$SEMANTIC_SEARCH_CORE_DECODED/AndroidManifest.xml\""
 if ! grep -q 'android:extractNativeLibs="true"' "$SEMANTIC_SEARCH_CORE_DECODED/AndroidManifest.xml"; then
     LOGE "Failed to enable native library extraction for SemanticSearchCore.apk"
@@ -467,3 +473,13 @@ LOG_STEP_OUT
 LOG "- Downloading latest Game Booster app"
 DOWNLOAD_FILE "$(GET_GALAXY_STORE_DOWNLOAD_URL "com.samsung.android.game.gametools")" \
     "$WORK_DIR/system/system/priv-app/GameTools_Dream/GameTools_Dream.apk"
+
+# Pet Detector in Galaxy AI
+LOG_STEP_IN "- Adding Pet Detector support in Galaxy AI features"
+if [ -d "$WORK_DIR/vendor/etc/petdetector/studio_pd" ]; then
+    DELETE_FROM_WORK_DIR "vendor" "etc/petdetector/studio_pd"
+fi
+ADD_TO_WORK_DIR "gts11xx" "vendor" "etc/petdetector/studio_pd/config_thresholds.json" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "gts11xx" "vendor" "etc/petdetector/studio_pd/studio_pd_cnn.info" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "gts11xx" "vendor" "etc/petdetector/studio_pd/studio_pd_cnn.tflite" 0 0 644 "u:object_r:vendor_configs_file:s0"
+LOG_STEP_OUT

@@ -6,6 +6,10 @@ TARGET_HAS_UWB="$(test -f "$FW_DIR/$TARGET_FIRMWARE_PATH/vendor/etc/permissions/
 
 if ! $SOURCE_HAS_UWB; then
     if $TARGET_HAS_UWB; then
+        if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "mssi" ]]; then
+            ABORT "\"mssi\" system image does not support targets with UWB. Aborting"
+        fi
+
         LOG "- Adding \"ro.boot.uwbcountrycode\" prop with \"ff\" in /product/etc/build.prop"
         EVAL "sed -i \"/usb.config/a ro.boot.uwbcountrycode=ff\" \"$WORK_DIR/product/etc/build.prop\""
 
@@ -46,7 +50,17 @@ if ! $SOURCE_HAS_UWB; then
     fi
 else
     if ! $TARGET_HAS_UWB; then
-        ABORT "Missing patch for condition (SOURCE_HAS_UWB: [$SOURCE_HAS_UWB], TARGET_HAS_UWB: [$TARGET_HAS_UWB]). Aborting"
+        LOG "- Disabling UWB features for target without UWB"
+        DELETE_FROM_WORK_DIR "product" "overlay/UwbRROverlay.apk"
+        DELETE_FROM_WORK_DIR "system" "system/app/UwbTest"
+        DELETE_FROM_WORK_DIR "system" "system/etc/init/init.system.uwb.rc"
+        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/com.samsung.android.uwb_extras.xml"
+        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.sec.android.app.uwbtest.xml"
+        DELETE_FROM_WORK_DIR "system" "system/framework/com.samsung.android.uwb_extras.jar"
+        DELETE_FROM_WORK_DIR "system" "system/framework/semuwb-service.jar"
+        DELETE_FROM_WORK_DIR "system" "system/lib/libtflite_uwb_jni.so"
+        DELETE_FROM_WORK_DIR "system" "system/lib64/libtflite_uwb_jni.so"
+        find "$WORK_DIR/system/system/etc/permissions" -type f -name "*uwb*.xml" -delete 2>/dev/null || true
     fi
 fi
 

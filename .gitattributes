@@ -25,6 +25,7 @@ unica/mods/settings/system/etc/unica/gpu/restore binary
 *.png binary
 *.qmg binary
 *.webp binary
+*.ko binary
 *.bcube binary
 *.cube binary
 *.dlc binary

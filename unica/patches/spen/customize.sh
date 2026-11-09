@@ -6,6 +6,10 @@ TARGET_HAS_SPEN="$(test -n "$(find "$FW_DIR/$TARGET_FIRMWARE_PATH/system/system/
 
 if ! $SOURCE_HAS_SPEN; then
     if $TARGET_HAS_SPEN; then
+        if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "mssi" ]]; then
+            ABORT "\"mssi\" system image does not support targets with S Pen. Aborting"
+        fi
+
         ADD_TO_WORK_DIR "b0qxxx" "system" "system/app/AirGlance/AirGlance.apk" 0 0 644 "u:object_r:system_file:s0"
         ADD_TO_WORK_DIR "b0qxxx" "system" "system/app/LiveDrawing/LiveDrawing.apk" 0 0 644 "u:object_r:system_file:s0"
         ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/default-permissions/default-permissions-com.samsung.android.service.aircommand.xml" 0 0 644 "u:object_r:system_file:s0"
@@ -31,7 +35,19 @@ if ! $SOURCE_HAS_SPEN; then
     fi
 else
     if ! $TARGET_HAS_SPEN; then
-        ABORT "Missing patch for condition (SOURCE_HAS_SPEN: [$SOURCE_HAS_SPEN], TARGET_HAS_SPEN: [$TARGET_HAS_SPEN]). Aborting"
+        LOG "- Disabling S Pen features for target without S Pen"
+        DELETE_FROM_WORK_DIR "system" "system/app/AirGlance"
+        DELETE_FROM_WORK_DIR "system" "system/app/LiveDrawing"
+        DELETE_FROM_WORK_DIR "system" "system/priv-app/AirCommand"
+        DELETE_FROM_WORK_DIR "system" "system/priv-app/AirReadingGlass"
+        DELETE_FROM_WORK_DIR "system" "system/priv-app/SmartEye"
+        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.aircommand.xml"
+        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.app.readingglass.xml"
+        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.airviewdictionary.xml"
+        DELETE_FROM_WORK_DIR "system" "system/etc/default-permissions/default-permissions-com.samsung.android.service.aircommand.xml"
+        DELETE_FROM_WORK_DIR "system" "system/etc/sysconfig/airviewdictionaryservice.xml"
+        DELETE_FROM_WORK_DIR "system" "system/media/audio/pensounds"
+        find "$WORK_DIR/system/system/etc/permissions" -type f -name "com.sec.feature.spen_usp*.xml" -delete 2>/dev/null || true
     fi
 fi
 
