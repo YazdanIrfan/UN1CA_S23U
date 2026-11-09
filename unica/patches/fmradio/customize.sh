@@ -5,7 +5,8 @@ fi
 
 if [ ! "$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FMRADIO_SUPPORT_EXTERNAL_RADIO_CHIPSET")" ]; then
     if [ ! -f "$WORK_DIR/system/system/lib64/libfmradio_jni.so" ]; then
-        ABORT "SEC_FLOATING_FEATURE_FMRADIO_SUPPORT_EXTERNAL_RADIO_CHIPSET is not set but \"libfmradio_jni.so\" is missing in /system/system/lib64"
+        LOGW "SEC_FLOATING_FEATURE_FMRADIO_SUPPORT_EXTERNAL_RADIO_CHIPSET is not set but \"libfmradio_jni.so\" is missing in /system/system/lib64"
+        return 0
     fi
 fi
 

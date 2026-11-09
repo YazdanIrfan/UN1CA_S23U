@@ -484,7 +484,7 @@ if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "35" ]; then
             HEX_PATCH "$WORK_DIR/system/system/lib/libstagefright.so" \
                 "aaea002879d1264c0620" "aaea002879e0264c0620"
         else
-            ABORT "No known patch available for the supplied libstagefright.so"
+            LOGW "No known patch available for the supplied libstagefright.so"
         fi
         if xxd -p -c 0 "$WORK_DIR/system/system/lib64/libstagefright.so" | grep -q "70690594205100347a9a40f9"; then
             HEX_PATCH "$WORK_DIR/system/system/lib64/libstagefright.so" \
@@ -493,7 +493,7 @@ if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "35" ]; then
             HEX_PATCH "$WORK_DIR/system/system/lib64/libstagefright.so" \
                 "864d0594604d00347a9a40f9" "864d05941f2003d57a9a40f9"
         else
-            ABORT "No known patch available for the supplied libstagefright.so"
+            LOGW "No known patch available for the supplied libstagefright.so"
         fi
         if [ -f "$WORK_DIR/system/system/priv-app/GlobalPostProcMgr/GlobalPostProcMgr.apk" ]; then
             SMALI_PATCH "system" "system/priv-app/GlobalPostProcMgr/GlobalPostProcMgr.apk" \

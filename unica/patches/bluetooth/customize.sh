@@ -127,12 +127,7 @@ EXTRACT_PAYLOAD()
 LOG_MISSING_PATCHES()
 {
     local MESSAGE="Missing SPF patches for condition ($1: [${!1}], $2: [${!2}])"
-
-    if $DEBUG; then
-        LOGW "$MESSAGE"
-    else
-        ABORT "${MESSAGE}. Aborting"
-    fi
+    LOGW "$MESSAGE"
 }
 
 SIGN_APEX()
@@ -283,7 +278,7 @@ elif xxd -p -c 0 "$TMP_DIR/unknown/apex_payload/lib64/libbluetooth_jni.so" | gre
     HEX_PATCH "$TMP_DIR/unknown/apex_payload/lib64/libbluetooth_jni.so" \
         "8856523948050037" "885652392a000014" > /dev/null
 else
-    ABORT "No known patch available for the supplied libbluetooth_jni.so"
+    LOGW "No known patch available for the supplied libbluetooth_jni.so, keeping stock"
 fi
 
 BUILD_APK_IN_APEX "$BLUETOOTH_APK_IN_APEX"
