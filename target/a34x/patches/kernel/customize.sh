@@ -35,7 +35,9 @@ CURRENT_KERNEL_SPL="$(echo "$MKBOOTIMG_ARGS" | grep "\-\-os_patch_level [0-9][0-
 KERNEL_SPL="$(cat "$TMP_DIR/kernel_info.txt" | grep 'asb_level' | sed 's/^asb_level=//' | grep -o "[0-9][0-9][0-9][0-9]-[0-9][0-9]")"
 EVAL "rm \"$TMP_DIR/kernel_info.txt\""
 
-MKBOOTIMG_ARGS="$(echo "$MKBOOTIMG_ARGS" | sed "s/\-\-os_patch_level $CURRENT_KERNEL_SPL/\-\-os_patch_level $KERNEL_SPL/")"
+if [ -n "$CURRENT_KERNEL_SPL" ] && [ -n "$KERNEL_SPL" ]; then
+    MKBOOTIMG_ARGS="$(echo "$MKBOOTIMG_ARGS" | sed "s/\-\-os_patch_level $CURRENT_KERNEL_SPL/\-\-os_patch_level $KERNEL_SPL/")"
+fi
 
 if [[ "$(LC_ALL=C file -b "$TMP_DIR/out/kernel")" != "Linux kernel ARM64"* ]]; then
     ABORT "Kernel image not valid. Aborting\n\n$(LC_ALL=C file -b "$TMP_DIR/out/kernel")"

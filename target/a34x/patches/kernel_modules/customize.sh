@@ -26,6 +26,7 @@ EVAL "rm \"$TMP_DIR/out/vendor_ramdisk00\""
 
 LOG "- Downgrading log_store.ko kernel module"
 
+mkdir -p "$TMP_DIR/out/ramdisk_out/lib/modules"
 EVAL "cp \"$MODPATH/log_store.ko\" \"$TMP_DIR/out/ramdisk_out/lib/modules/log_store.ko\""
 
 LOG "- Replacing smcdsd_panel.ko display panel kernel module"
