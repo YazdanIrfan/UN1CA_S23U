@@ -219,17 +219,31 @@ LOG_STEP_OUT
 
 # Media Context Analyzer
 LOG_STEP_IN "- Adding Media Context Analyzer feature"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer" 0 0 755 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-03_Video_HumanPetDetection_v2.0.1_SM8850_SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-04_Video_HumanPetPose_v3.1.1_SM8850-SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-05_Video_KeywordClassification_v1.1.0_SM8850_SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Detection.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Keyword.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Pose.dlc" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libcontextanalyzer_jni.media.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libmediacontextanalyzer.so" 0 0 644 "u:object_r:system_lib_file:s0"
-ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libvideo-highlight-arm64-v8a.so" 0 0 644 "u:object_r:system_lib_file:s0"
-SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_MMFW_CONFIG_MEDIA_CONTEXT_ANALYZER_CORE" "NPU"
+if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "mssi" ]]; then
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-03_Video_HumanPetDetection_v2.0.2_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-04_Video_HumanPetPose_v3.1.1b_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-05_Video_KeywordClassification_v1.1.1_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/Keyword.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/Detection.tflite" 0 0 644 "u:object_r:system_file:s0"
+    EVAL "ln -s \"07-04_Video_HumanPetPose_v3.1.1b_GPU.tflite\" \"$WORK_DIR/system/system/etc/mediacontextanalyzer/Pose.tflite\""
+    SET_METADATA "system" "system/etc/mediacontextanalyzer/Pose.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/lib64/libcontextanalyzer_jni.media.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/lib64/libmediacontextanalyzer.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/lib64/libvideo-highlight-arm64-v8a.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_MMFW_CONFIG_MEDIA_CONTEXT_ANALYZER_CORE" "GPU"
+else
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer" 0 0 755 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-03_Video_HumanPetDetection_v2.0.1_SM8850_SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-04_Video_HumanPetPose_v3.1.1_SM8850-SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/07-05_Video_KeywordClassification_v1.1.0_SM8850_SNPE238.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Detection.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Keyword.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/etc/mediacontextanalyzer/Pose.dlc" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libcontextanalyzer_jni.media.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libmediacontextanalyzer.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "m3qxxx" "system" "system/lib64/libvideo-highlight-arm64-v8a.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_MMFW_CONFIG_MEDIA_CONTEXT_ANALYZER_CORE" "NPU"
+fi
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_MMFW_SUPPORT_MEDIA_CONTEXT_ANALYZER" "TRUE"
 LOG_STEP_OUT
 
@@ -461,11 +475,9 @@ unset SEMANTIC_SEARCH_CORE_FW SEMANTIC_SEARCH_CORE_QNN_MISSING SEMANTIC_SEARCH_C
 DECODE_APK "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
 LOG "- Enabling Semantic search feature in /system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
 EVAL "cp -a \"$MODPATH/semanticsearch/SecSettingsIntelligence.apk/res/raw/\"* \"$APKTOOL_DIR/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk/res/raw\""
-SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" \
-    "smali_classes2/com/samsung/android/settings/intelligence/Rune.smali" "replaceall" \
-    "const-string v1, \\\"\\\"" \
-    "const-string v1, \\\"400\\\"" \
-    > /dev/null
+SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "smali_classes2/com/samsung/android/settings/intelligence/Rune.smali" "return" "getSemanticSearchVersion()I" "400"
+SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "smali_classes2/com/samsung/android/settings/intelligence/Rune.smali" "return" "getSupportSearchInAppAssist()Z" "true"
+SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" "smali_classes2/com/samsung/android/settings/intelligence/Utils.smali" "return" "isNPUVersion()Z" "false"
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_MSCH_SUPPORT_NLSEARCH" "TRUE"
 LOG_STEP_OUT
 
