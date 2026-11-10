@@ -3,13 +3,6 @@ From: @rezoss_reza <rezoss@local>
 Date: Mon, 14 Sep 2026 00:00:00 +0200
 Subject: [PATCH] Add recovery and flight mode power menu actions
 
-diff --git a/AndroidManifest.xml b/AndroidManifest.xml
-index 2f8d6821f..95a1f8040 100644
---- a/AndroidManifest.xml
-+++ b/AndroidManifest.xml
-@@ -9,0 +10,2 @@
-+    <uses-permission android:name="android.permission.REBOOT"/>
-+    <uses-permission android:name="android.permission.RECOVERY"/>
 diff --git a/smali_classes2/com/android/systemui/globalactions/features/RezossPowerMenuStrategy.smali b/smali_classes2/com/android/systemui/globalactions/features/RezossPowerMenuStrategy.smali
 new file mode 100644
 index 000000000..782bb1ce3

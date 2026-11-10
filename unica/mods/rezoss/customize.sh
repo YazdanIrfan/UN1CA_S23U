@@ -902,6 +902,14 @@ if grep -q -F 'DepthEffectController;->attach' "$REZOSS_DEPTH_SYSTEMUI_DIR/$REZO
     APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
         "$MODPATH/systemui/SystemUI.apk/0008-Remove-lockscreen-Depth-Effect-compositor-hook.patch"
 fi
+if [ -f "$REZOSS_DEPTH_SYSTEMUI_DIR/AndroidManifest.xml" ]; then
+    if ! grep -q 'android.permission.REBOOT' "$REZOSS_DEPTH_SYSTEMUI_DIR/AndroidManifest.xml"; then
+        sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.REBOOT"\/>' "$REZOSS_DEPTH_SYSTEMUI_DIR/AndroidManifest.xml"
+    fi
+    if ! grep -q 'android.permission.RECOVERY' "$REZOSS_DEPTH_SYSTEMUI_DIR/AndroidManifest.xml"; then
+        sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.RECOVERY"\/>' "$REZOSS_DEPTH_SYSTEMUI_DIR/AndroidManifest.xml"
+    fi
+fi
 unset REZOSS_DEPTH_SYSTEMUI_DIR REZOSS_DEPTH_SYSTEMUI_HOOK
 
 LOG "- Downloading latest Samsung Always On Display app"

@@ -32,7 +32,7 @@ if [[ "$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME" != "$TARGET_DVFSAPP_CONFIG_D
             LOG "- Replacing \"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\" with \"$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\" in ${f#$SDHMS_DIR/}"
             sed -i "s/\"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"/\"$TARGET_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"/g" "$f"
             PATCHED_DVFS=true
-        done < <(grep -r -l -- "\"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"" "$SDHMS_DIR" 2>/dev/null || true)
+        done < <(find "$SDHMS_DIR" -type d -name "smali*" -exec grep -r -l -- "\"$SOURCE_DVFSAPP_CONFIG_DVFS_POLICY_FILENAME\"" {} + 2>/dev/null || true)
     fi
     if ! $PATCHED_DVFS; then
         SMALI_PATCH "system" "system/priv-app/SamsungDeviceHealthManagerService/SamsungDeviceHealthManagerService.apk" \

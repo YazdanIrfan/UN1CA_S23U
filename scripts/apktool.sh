@@ -76,6 +76,35 @@ BUILD()
     # Most APKs are rebuilt with shortened resource paths. SmartSuggestions is
     # kept expanded because its known working CHN build uses expanded res paths.
     find "$OUTPUT_PATH" -type f \( -name "*.orig" -o -name "*.rej" \) -delete
+    if [ -f "$OUTPUT_PATH/AndroidManifest.xml" ]; then
+        sed -i '/<\/manifest>/q' "$OUTPUT_PATH/AndroidManifest.xml"
+    fi
+    if [ -f "$OUTPUT_PATH/res/values/public.xml" ]; then
+        python3 - "$OUTPUT_PATH/res/values/public.xml" <<'PY' || true
+import sys
+import xml.etree.ElementTree as ET
+
+path = sys.argv[1]
+try:
+    tree = ET.parse(path)
+    root = tree.getroot()
+    seen = set()
+    to_remove = []
+    for elem in list(root):
+        if elem.tag == 'public':
+            key = (elem.attrib.get('type'), elem.attrib.get('name'))
+            if key in seen:
+                to_remove.append(elem)
+            else:
+                seen.add(key)
+    if to_remove:
+        for elem in to_remove:
+            root.remove(elem)
+        tree.write(path, encoding='utf-8', xml_declaration=True)
+except Exception:
+    pass
+PY
+    fi
     REBALANCE_DEX
     if $SHORTEN_RESOURCE_PATHS; then
         EVAL "apktool -JXmx${HEAP_SIZE}m b -j \"$THREAD_COUNT\" -p \"$FRAMEWORK_DIR\" -srp \"$OUTPUT_PATH\"" || exit 1
