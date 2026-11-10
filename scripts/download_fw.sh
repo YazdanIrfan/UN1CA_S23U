@@ -152,14 +152,24 @@ for i in "${FIRMWARES[@]}"; do
     [ -f "$ODIN_DIR/${MODEL}_${CSC}/.downloaded" ] && rm -rf "$ODIN_DIR/${MODEL}_${CSC}"
     mkdir -p "$ODIN_DIR/${MODEL}_${CSC}"
     # Anan's samloader stores its logs in the current working directory, let's move into OUT_DIR just for this time
-    (
-    cd "$OUT_DIR" || exit 1
-    samloader -m "$MODEL" -r "$CSC" -i "$IMEI" -s "$SERIAL_NO" download -O "$ODIN_DIR/${MODEL}_${CSC}" 1> /dev/null || exit 1
-    )
+    local DOWNLOAD_SUCCESS=false
+    for dl_attempt in 1 2 3 4 5; do
+        if (
+            cd "$OUT_DIR" || exit 1
+            samloader -m "$MODEL" -r "$CSC" -i "$IMEI" -s "$SERIAL_NO" download -O "$ODIN_DIR/${MODEL}_${CSC}" 1> /dev/null
+        ); then
+            ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
+            if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
+                DOWNLOAD_SUCCESS=true
+                break
+            fi
+        fi
+        LOG "\033[0;33m! Download attempt $dl_attempt failed or interrupted, retrying in 10 seconds...\033[0m"
+        sleep 10
+    done
 
-    ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
-    if [ ! "$ZIP_FILE" ] || [ ! -f "$ZIP_FILE" ]; then
-        LOG "\033[0;31m! Download failed\033[0m"
+    if ! $DOWNLOAD_SUCCESS; then
+        LOG "\033[0;31m! Download failed after 5 attempts\033[0m"
         exit 1
     fi
 
