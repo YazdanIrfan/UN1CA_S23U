@@ -220,12 +220,13 @@ LOG_STEP_OUT
 # Media Context Analyzer
 LOG_STEP_IN "- Adding Media Context Analyzer feature"
 if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "mssi" ]]; then
-    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-03_Video_HumanPetDetection_v2.0.2_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
-    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-04_Video_HumanPetPose_v3.1.1b_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
-    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/07-05_Video_KeywordClassification_v1.1.1_GPU.tflite" 0 0 644 "u:object_r:system_file:s0"
-    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/Keyword.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer" 0 0 755 "u:object_r:system_file:s0"
     ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/Detection.tflite" 0 0 644 "u:object_r:system_file:s0"
-    EVAL "ln -s \"07-04_Video_HumanPetPose_v3.1.1b_GPU.tflite\" \"$WORK_DIR/system/system/etc/mediacontextanalyzer/Pose.tflite\""
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/human-pet-det_SR-V131.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/human-pet-pose_SR-V200.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/Keyword.tflite" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "a56xnaxx" "system" "system/etc/mediacontextanalyzer/keyword-classification_SR-V031.tflite" 0 0 644 "u:object_r:system_file:s0"
+    EVAL "ln -sf \"human-pet-pose_SR-V200.tflite\" \"$WORK_DIR/system/system/etc/mediacontextanalyzer/Pose.tflite\""
     SET_METADATA "system" "system/etc/mediacontextanalyzer/Pose.tflite" 0 0 644 "u:object_r:system_file:s0"
     ADD_TO_WORK_DIR "a56xnaxx" "system" "system/lib64/libcontextanalyzer_jni.media.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
     ADD_TO_WORK_DIR "a56xnaxx" "system" "system/lib64/libmediacontextanalyzer.so" 0 0 644 "u:object_r:system_lib_file:s0"
