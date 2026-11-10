@@ -41,6 +41,8 @@ BUILD_APKS()
     if [ -d "$APKTOOL_DIR" ]; then
         LOG_STEP_IN true "Building APKs/JARs"
 
+        find "$APKTOOL_DIR" \( -name "*.orig" -o -name "*.rej" \) -delete 2>/dev/null || true
+
         # shellcheck disable=SC2016
         find "$APKTOOL_DIR" -type d \( -name "*.apk" -o -name "*.jar" \) -print0 | xargs -0 -I "{}" -P "$MAX_JOBS" \
             bash -c '

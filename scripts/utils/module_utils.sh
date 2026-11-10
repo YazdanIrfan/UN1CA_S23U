@@ -43,27 +43,99 @@ APPLY_PATCH()
 
     DECODE_APK "$PARTITION" "$FILE" || return 1
 
-    LOG "- Applying \"$(grep "^Subject:" "$PATCH" | sed "s/.*PATCH] //")\" to /$PARTITION/$FILE"
-    if ! EVAL "LC_ALL=C patch -p1 \
-        -d \"$APKTOOL_DIR/$PARTITION/${FILE//system\//}\" \
-        -N --forward -l \
-        < \"$PATCH\""; then
-        local patch_file
-        patch_file=$(grep -m 1 "^--- a/" "$PATCH" | sed 's|^--- a/||' | tr -d '\r')
-        local patch_basename
-        patch_basename=$(basename "$patch_file")
-        local actual_file
-        actual_file=$(find "$APKTOOL_DIR/$PARTITION/${FILE//system\//}" -name "$patch_basename" 2>/dev/null | head -n 1)
-        if [ -n "$actual_file" ]; then
-            local actual_rel="${actual_file#$APKTOOL_DIR/$PARTITION/${FILE//system\//}/}"
-            if [ "$actual_rel" != "$patch_file" ]; then
-                LOG "- Retrying patch on relocated file: $actual_rel"
-                sed "s|$patch_file|$actual_rel|g" "$PATCH" | patch -p1 -d "$APKTOOL_DIR/$PARTITION/${FILE//system\//}" -N --forward -l || LOGW "Relocated patch could not be applied cleanly, continuing..."
+    local TARGET_DIR="$APKTOOL_DIR/$PARTITION/${FILE//system\//}"
+    local PATCH_NAME
+    PATCH_NAME="$(grep -m 1 "^Subject:" "$PATCH" 2>/dev/null | sed "s/.*PATCH] //")"
+    [ -z "$PATCH_NAME" ] && PATCH_NAME="$(basename "$PATCH")"
+
+    LOG "- Applying \"$PATCH_NAME\" to /$PARTITION/$FILE"
+
+    # Multidex path relocation handling:
+    # Check if files targeted in patch exist under TARGET_DIR.
+    # In newer Android / One UI versions, smali classes may be placed in smali_classes2..8 instead of smali.
+    local WORKING_PATCH="$PATCH"
+    local TMP_PATCH=""
+    local NEED_RELOC=false
+    local TARGET_FILES
+    TARGET_FILES=$(grep "^--- a/" "$PATCH" 2>/dev/null | sed 's|^--- a/||' | tr -d '\r')
+
+    for tf in $TARGET_FILES; do
+        if [ ! -f "$TARGET_DIR/$tf" ]; then
+            local bname
+            bname=$(basename "$tf")
+            local found
+            found=$(find "$TARGET_DIR" -type f -name "$bname" 2>/dev/null | head -n 1)
+            if [ -n "$found" ]; then
+                local rel="${found#$TARGET_DIR/}"
+                if [ "$rel" != "$tf" ]; then
+                    NEED_RELOC=true
+                    break
+                fi
             fi
-        else
-            LOGW "Patch target $patch_basename not found or incompatible with this base, skipping..."
+        fi
+    done
+
+    if $NEED_RELOC; then
+        TMP_PATCH="$(mktemp)"
+        cp "$PATCH" "$TMP_PATCH"
+        for tf in $TARGET_FILES; do
+            if [ ! -f "$TARGET_DIR/$tf" ]; then
+                local bname
+                bname=$(basename "$tf")
+                local found
+                found=$(find "$TARGET_DIR" -type f -name "$bname" 2>/dev/null | head -n 1)
+                if [ -n "$found" ]; then
+                    local rel="${found#$TARGET_DIR/}"
+                    sed -i "s|a/$tf|a/$rel|g; s|b/$tf|b/$rel|g" "$TMP_PATCH"
+                fi
+            fi
+        done
+        WORKING_PATCH="$TMP_PATCH"
+    fi
+
+    local APPLIED=false
+
+    # 1. First test git apply (strictly atomic; checks whole patch in memory before touching files)
+    if git apply --check --unsafe-paths --ignore-whitespace --directory="$TARGET_DIR" "$WORKING_PATCH" >/dev/null 2>&1; then
+        if git apply --unsafe-paths --ignore-whitespace --directory="$TARGET_DIR" "$WORKING_PATCH" >/dev/null 2>&1; then
+            APPLIED=true
+        fi
+    elif [ "$WORKING_PATCH" != "$PATCH" ]; then
+        if git apply --check --unsafe-paths --ignore-whitespace --directory="$TARGET_DIR" "$PATCH" >/dev/null 2>&1; then
+            if git apply --unsafe-paths --ignore-whitespace --directory="$TARGET_DIR" "$PATCH" >/dev/null 2>&1; then
+                APPLIED=true
+            fi
         fi
     fi
+
+    # 2. If git apply did not match, test atomically with GNU patch --dry-run
+    # --dry-run guarantees zero modifications to disk
+    if ! $APPLIED; then
+        if patch -p1 --dry-run -s -f -N --forward -l -d "$TARGET_DIR" < "$WORKING_PATCH" >/dev/null 2>&1; then
+            if patch -p1 -s -N --forward -l -d "$TARGET_DIR" < "$WORKING_PATCH" >/dev/null 2>&1; then
+                APPLIED=true
+            fi
+        elif [ "$WORKING_PATCH" != "$PATCH" ]; then
+            if patch -p1 --dry-run -s -f -N --forward -l -d "$TARGET_DIR" < "$PATCH" >/dev/null 2>&1; then
+                if patch -p1 -s -N --forward -l -d "$TARGET_DIR" < "$PATCH" >/dev/null 2>&1; then
+                    APPLIED=true
+                fi
+            fi
+        fi
+    fi
+
+    # Clean up temp patch file if created
+    [ -n "$TMP_PATCH" ] && rm -f "$TMP_PATCH"
+
+    # Always ensure no .orig or .rej files remain in TARGET_DIR
+    find "$TARGET_DIR" \( -name "*.orig" -o -name "*.rej" \) -delete 2>/dev/null || true
+
+    if $APPLIED; then
+        LOG "  Successfully applied \"$PATCH_NAME\""
+    else
+        LOGW "  Patch \"$PATCH_NAME\" cannot be applied cleanly to this base, skipping to prevent bytecode corruption"
+    fi
+
     return 0
 }
 
