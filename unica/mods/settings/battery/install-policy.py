@@ -18,9 +18,10 @@ for _, target in files:
     if not target.is_file():
         raise SystemExit(f'Battery Saving: required policy input missing: {target}')
 policy = (vendor / 'vendor_sepolicy.cil').read_text()
-for symbol in ('proc_swappiness', 'vendor_sysfs_kgsl'):
-    if f'(type {symbol})' not in policy:
-        raise SystemExit(f'Battery Saving: vendor lacks required type {symbol}')
+plat_policy = (platform / 'plat_sepolicy.cil').read_text()
+pub_versioned = vendor / 'plat_pub_versioned.cil'
+vendor_corpus = policy + ('\n' + pub_versioned.read_text() if pub_versioned.is_file() else '')
+sysfs_match = re.search(r'\b(sysfs_\d+_\d+)\b', vendor_corpus)
 updates = []
 for name, target in files:
     prefix = ';' if name.endswith('.cil') else '#'
@@ -33,6 +34,24 @@ for name, target in files:
         for line in old.splitlines():
             if re.match(r'^\(allow \S+ sysfs \(file ', line):
                 payload += '\n' + line.replace(' sysfs (file ', ' unica_battery_sysfs (file ')
+    elif name == 'vendor.cil':
+        # Selectively emit vendor rules only for types supported by the target vendor policy.
+        filtered = []
+        for line in payload.splitlines():
+            if 'vendor_sysfs_kgsl' in line:
+                if '(type vendor_sysfs_kgsl)' in policy:
+                    filtered.append(line)
+            elif 'proc_swappiness' in line:
+                if '(type proc_swappiness)' in policy or '(type proc_swappiness)' in plat_policy:
+                    filtered.append(line)
+            elif 'sysfs_33_0' in line:
+                if sysfs_match:
+                    filtered.append(line.replace('sysfs_33_0', sysfs_match.group(1)))
+                elif 'sysfs_33_0' in vendor_corpus:
+                    filtered.append(line)
+            else:
+                filtered.append(line)
+        payload = re.sub(r'\n{3,}', '\n\n', '\n'.join(filtered)).strip()
     block = begin + '\n' + payload + '\n' + end
     if begin in old:
         before, tail = old.split(begin, 1)
