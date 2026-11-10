@@ -981,43 +981,45 @@ for REZOSS_SCS_POLICY_XML in \
     ADD_TO_WORK_DIR "$MODPATH" "system" "system/etc/$REZOSS_SCS_POLICY_XML" 0 0 644 "u:object_r:system_file:s0"
 done
 unset REZOSS_SCS_POLICY_XML
-LOG "- Build opt-in UN1CA local notification-summary provider"
-LOCAL_SUMMARY_SERVICE_DIR="$MODPATH/local-summary-service"
-LOCAL_SUMMARY_SERVICE_APK="$LOCAL_SUMMARY_SERVICE_DIR/system/priv-app/RezossAI/RezossAI.apk"
-EVAL "bash \"$LOCAL_SUMMARY_SERVICE_DIR/build.sh\" \"$LOCAL_SUMMARY_SERVICE_APK\""
-ADD_TO_WORK_DIR "$LOCAL_SUMMARY_SERVICE_DIR" "system" "system/priv-app/RezossAI/RezossAI.apk" 0 0 644 "u:object_r:system_file:s0"
-SET_METADATA "system" "system/priv-app/RezossAI" 0 0 755 "u:object_r:system_file:s0"
-SET_METADATA "system" "system/priv-app/RezossAI/RezossAI.apk" 0 0 644 "u:object_r:system_file:s0"
-ADD_TO_WORK_DIR "$LOCAL_SUMMARY_SERVICE_DIR" "system" "system/etc/default-permissions/default-permissions-unica-local-summary.xml" 0 0 644 "u:object_r:system_file:s0"
-# Ship the lightweight API/settings app; users install model assets as an update.
-# Build in a temporary directory so a previous combined APK cannot be reused.
-LOG "- Build small Qwen settings stub (offline model APK installed separately)"
-QWEN_STUB_BUILD=$(mktemp -d "$TMP_DIR/qwen-stub.XXXXXX") || return 1
-EVAL "bash \"$MODPATH/qwen-llm/system-stub/build.sh\" \"$QWEN_STUB_BUILD/system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk\"" || return 1
-ADD_TO_WORK_DIR "$QWEN_STUB_BUILD" "system" "system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk" 0 0 644 "u:object_r:system_file:s0" || return 1
-SET_METADATA "system" "system/priv-app/QWEN_LLM_rezoss_stub" 0 0 755 "u:object_r:system_file:s0"
-SET_METADATA "system" "system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk" 0 0 644 "u:object_r:system_file:s0"
-unset QWEN_STUB_BUILD
-# The separately installed app holds local model assets and private API settings.
-# Remove legacy payloads from incremental builds; keep only the bridge.
-DELETE_FROM_WORK_DIR "system" "system/bin/unica-summary-llama"
-DELETE_FROM_WORK_DIR "system" "system/bin/unica-summary-llama-server"
-DELETE_FROM_WORK_DIR "system" "system/etc/unica/local-summary/qwen2.5-0.5b-instruct-q4_k_m.gguf"
-ADD_TO_WORK_DIR "$MODPATH" "system" "system/etc/sysconfig/rezoss-ai-associations.xml" 0 0 644 "u:object_r:system_file:s0"
-LOG "- Native dm3q local backend: $UNICA_LOCAL_LLM_BACKEND; separate model and optional APIs in UN1CA Extra Settings > AI backend settings"
-LOCAL_SUMMARY_ALLOWLIST="$WORK_DIR/system/system/etc/sysconfig/allowed-system-preload-apps.xml"
-if ! grep -q -F 'package="io.mesalabs.unica.localsummary"' "$LOCAL_SUMMARY_ALLOWLIST"; then
-    EVAL "LC_ALL=C patch --batch --fuzz=0 -p1 -d \"$WORK_DIR/system/system/etc/sysconfig\" < \"$LOCAL_SUMMARY_SERVICE_DIR/allowed-system-preload-apps.xml/0001-Allow-UN1CA-local-summary-provider.patch\"" \
-        || ABORT "Failed to allow the UN1CA local summary provider"
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
+    LOG "- Build opt-in UN1CA local notification-summary provider"
+    LOCAL_SUMMARY_SERVICE_DIR="$MODPATH/local-summary-service"
+    LOCAL_SUMMARY_SERVICE_APK="$LOCAL_SUMMARY_SERVICE_DIR/system/priv-app/RezossAI/RezossAI.apk"
+    EVAL "bash \"$LOCAL_SUMMARY_SERVICE_DIR/build.sh\" \"$LOCAL_SUMMARY_SERVICE_APK\""
+    ADD_TO_WORK_DIR "$LOCAL_SUMMARY_SERVICE_DIR" "system" "system/priv-app/RezossAI/RezossAI.apk" 0 0 644 "u:object_r:system_file:s0"
+    SET_METADATA "system" "system/priv-app/RezossAI" 0 0 755 "u:object_r:system_file:s0"
+    SET_METADATA "system" "system/priv-app/RezossAI/RezossAI.apk" 0 0 644 "u:object_r:system_file:s0"
+    ADD_TO_WORK_DIR "$LOCAL_SUMMARY_SERVICE_DIR" "system" "system/etc/default-permissions/default-permissions-unica-local-summary.xml" 0 0 644 "u:object_r:system_file:s0"
+    # Ship the lightweight API/settings app; users install model assets as an update.
+    # Build in a temporary directory so a previous combined APK cannot be reused.
+    LOG "- Build small Qwen settings stub (offline model APK installed separately)"
+    QWEN_STUB_BUILD=$(mktemp -d "$TMP_DIR/qwen-stub.XXXXXX") || return 1
+    EVAL "bash \"$MODPATH/qwen-llm/system-stub/build.sh\" \"$QWEN_STUB_BUILD/system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk\"" || return 1
+    ADD_TO_WORK_DIR "$QWEN_STUB_BUILD" "system" "system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk" 0 0 644 "u:object_r:system_file:s0" || return 1
+    SET_METADATA "system" "system/priv-app/QWEN_LLM_rezoss_stub" 0 0 755 "u:object_r:system_file:s0"
+    SET_METADATA "system" "system/priv-app/QWEN_LLM_rezoss_stub/QWEN_LLM_rezoss_stub.apk" 0 0 644 "u:object_r:system_file:s0"
+    unset QWEN_STUB_BUILD
+    # The separately installed app holds local model assets and private API settings.
+    # Remove legacy payloads from incremental builds; keep only the bridge.
+    DELETE_FROM_WORK_DIR "system" "system/bin/unica-summary-llama"
+    DELETE_FROM_WORK_DIR "system" "system/bin/unica-summary-llama-server"
+    DELETE_FROM_WORK_DIR "system" "system/etc/unica/local-summary/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+    ADD_TO_WORK_DIR "$MODPATH" "system" "system/etc/sysconfig/rezoss-ai-associations.xml" 0 0 644 "u:object_r:system_file:s0"
+    LOG "- Native dm3q local backend: $UNICA_LOCAL_LLM_BACKEND; separate model and optional APIs in UN1CA Extra Settings > AI backend settings"
+    LOCAL_SUMMARY_ALLOWLIST="$WORK_DIR/system/system/etc/sysconfig/allowed-system-preload-apps.xml"
+    if ! grep -q -F 'package="io.mesalabs.unica.localsummary"' "$LOCAL_SUMMARY_ALLOWLIST"; then
+        EVAL "LC_ALL=C patch --batch --fuzz=0 -p1 -d \"$WORK_DIR/system/system/etc/sysconfig\" < \"$LOCAL_SUMMARY_SERVICE_DIR/allowed-system-preload-apps.xml/0001-Allow-UN1CA-local-summary-provider.patch\"" \
+            || ABORT "Failed to allow the UN1CA local summary provider"
+    fi
+    if ! grep -q -F 'package="io.mesalabs.rezoss.qwen"' "$LOCAL_SUMMARY_ALLOWLIST"; then
+        EVAL "LC_ALL=C patch --batch --fuzz=0 -p1 -d \"$WORK_DIR/system/system/etc/sysconfig\" < \"$LOCAL_SUMMARY_SERVICE_DIR/allowed-system-preload-apps.xml/0002-Allow-Rezoss-Qwen-engine.patch\"" \
+            || ABORT "Failed to allow the Rezoss Qwen engine"
+    fi
+    EVAL "rm -f \"$LOCAL_SUMMARY_ALLOWLIST.orig\" \"$LOCAL_SUMMARY_ALLOWLIST.rej\"" \
+        || ABORT "Failed to remove stale local summary allowlist patch artifacts"
+    unset LOCAL_SUMMARY_ALLOWLIST
+    unset LOCAL_SUMMARY_SERVICE_APK LOCAL_SUMMARY_SERVICE_DIR
 fi
-if ! grep -q -F 'package="io.mesalabs.rezoss.qwen"' "$LOCAL_SUMMARY_ALLOWLIST"; then
-    EVAL "LC_ALL=C patch --batch --fuzz=0 -p1 -d \"$WORK_DIR/system/system/etc/sysconfig\" < \"$LOCAL_SUMMARY_SERVICE_DIR/allowed-system-preload-apps.xml/0002-Allow-Rezoss-Qwen-engine.patch\"" \
-        || ABORT "Failed to allow the Rezoss Qwen engine"
-fi
-EVAL "rm -f \"$LOCAL_SUMMARY_ALLOWLIST.orig\" \"$LOCAL_SUMMARY_ALLOWLIST.rej\"" \
-    || ABORT "Failed to remove stale local summary allowlist patch artifacts"
-unset LOCAL_SUMMARY_ALLOWLIST
-unset LOCAL_SUMMARY_SERVICE_APK LOCAL_SUMMARY_SERVICE_DIR
 ADD_TO_WORK_DIR "m3qxxx" "system" "system/app/SketchBook/SketchBook.apk" 0 0 644 "u:object_r:system_file:s0"
 LOG "- Overlay S26U Notification highlights AI APKs"
 LOG "- Adding S26U One UI 9 Samsung Intelligence Voice Service"
@@ -1052,8 +1054,8 @@ ADD_TO_WORK_DIR "m3qxxx" "system" "system/priv-app/OfflineLanguageModel_stub/Off
 LOG "- Adding S26U NMT languagepack preload metadata"
 S26U_NMT_TARGET_PRELOAD="$WORK_DIR/system/system/etc/removable_preload.txt"
 if [ ! -f "$S26U_NMT_TARGET_PRELOAD" ]; then
-    LOGE "File not found: ${S26U_NMT_TARGET_PRELOAD//$SRC_DIR\//}"
-    return 1
+    mkdir -p "$(dirname "$S26U_NMT_TARGET_PRELOAD")"
+    touch "$S26U_NMT_TARGET_PRELOAD"
 fi
 ADD_S26U_NMT_PRELOAD()
 {
@@ -1278,21 +1280,23 @@ LOG "- Patch SecSettings Notification highlights S26U gate"
 APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
     "$MODPATH/notification-priority/SecSettings.apk/0001-Match-S26U-notification-highlights-gate.patch"
 
-LOG "- Patch services.jar AI notification priority/summary model gate"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/notification-priority/services.jar/0001-Allow-dm1q-dm2q-dm3q-AI-notification-priority.patch"
-LOG "- Add property-gated local notification-summary test bridge"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/notification-priority/services.jar/0002-Add-property-gated-local-summary-test-bridge.patch"
-LOG "- Route opt-in local notification summaries through the provider"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/notification-priority/services.jar/0003-Call-opt-in-local-summary-provider.patch"
-LOG "- Log Now Nudge notification request gates"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/notification-priority/services.jar/0004-Log-Now-Nudge-notification-request-gates.patch"
-LOG "- Keeping bound Qwen inference on foreground CPUs"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/notification-priority/services.jar/0005-Keep-bound-Qwen-on-foreground-CPUs.patch"
+if [[ "$TARGET_CODENAME" == "dm3q" ]]; then
+    LOG "- Patch services.jar AI notification priority/summary model gate"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/notification-priority/services.jar/0001-Allow-dm1q-dm2q-dm3q-AI-notification-priority.patch"
+    LOG "- Add property-gated local notification-summary test bridge"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/notification-priority/services.jar/0002-Add-property-gated-local-summary-test-bridge.patch"
+    LOG "- Route opt-in local notification summaries through the provider"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/notification-priority/services.jar/0003-Call-opt-in-local-summary-provider.patch"
+    LOG "- Log Now Nudge notification request gates"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/notification-priority/services.jar/0004-Log-Now-Nudge-notification-request-gates.patch"
+    LOG "- Keeping bound Qwen inference on foreground CPUs"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/notification-priority/services.jar/0005-Keep-bound-Qwen-on-foreground-CPUs.patch"
+fi
 
 LOG "- Patch SettingsProvider notification priority/summary defaults"
 APPLY_PATCH "system" "system/priv-app/SettingsProvider/SettingsProvider.apk" \
